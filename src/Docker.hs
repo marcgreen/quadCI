@@ -89,7 +89,8 @@ startContainer_ container = do
 data Service
   = Service
     { createContainer :: CreateContainerOptions -> IO ContainerId,
-      startContainer :: ContainerId -> IO ()
+      startContainer :: ContainerId -> IO (),
+      containerStatus :: ContainerId -> IO ContainerStatus
     }
 
 createService :: IO Service
@@ -97,4 +98,11 @@ createService = do
   pure Service
     { createContainer = createContainer_
     , startContainer = startContainer_
+    , containerStatus = undefined
     }
+
+data ContainerStatus
+  = ContainerRunning
+  | ContainerExited ContainerExitCode
+  | ContainerOther Text
+  deriving (Eq, Show)
