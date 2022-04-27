@@ -82,9 +82,6 @@ progress docker build =
                                       container = container }
           pure $ build{state = BuildRunning s}
     BuildRunning state -> do
-      let exit = Docker.ContainerExitCode 0
-          result = exitCodeToStepResult exit
-      
       status <- docker.containerStatus state.container
       case status of
         Docker.ContainerRunning ->
@@ -92,7 +89,8 @@ progress docker build =
           pure build
         Docker.ContainerExited exit ->
           -- bookkeep
-          pure build
+          let result = exitCodeToStepResult exit
+          in pure build
             { state = BuildReady
             , completedSteps = Map.insert state.step result build.completedSteps
             }
