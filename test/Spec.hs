@@ -46,8 +46,17 @@ testRunFailure runner = do
           ]
   result <- runner.runBuild build
   result.state `shouldBe` BuildFinished BuildFailed
-  Map.elems result.completedSteps
-    `shouldBe` [StepFailed (Docker.ContainerExitCode 1)]
+  Map.elems result.completedSteps `shouldBe` [StepFailed (Docker.ContainerExitCode 1)]
+
+testSharedWorkspace :: Docker.Service -> Runner.Service -> IO ()
+testSharedWorkspace docker runner = do
+  build <- runner.prepareBuild $ makePipeline
+           [ makeStep "Create file" "ubuntu" ["echo hello > test"]
+           , makeStep "Read file" "ubuntu" ["cat test"]
+           ]
+  result <- runner.runBuild build
+  result.state `shouldBe` BuildFinished BuildSucceeded
+  Map.elems result.completedSteps `shouldBe` [StepSucceeded,StepSucceeded]
 
 main :: IO ()
 main = hspec do
@@ -59,7 +68,10 @@ main = hspec do
       testRunSuccess runner
     it "should run a build (failure)" do
       testRunFailure runner
+    it "should share workspace between steps" do
+      testSharedWorkspace docker runner
 
 cleanupDocker :: IO ()
 cleanupDocker = void do
   Process.readProcessStdout "docker rm -f $(docker ps -aq --filter \"label=quad\")"
+  Process.readProcessStdout "docker volume rm -f $(docker volume ls -q --filter \"label=quad\")"

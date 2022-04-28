@@ -27,6 +27,7 @@ data Build
     { pipeline :: Pipeline
     , state :: BuildState
     , completedSteps :: Map StepName StepResult
+    , volume :: Docker.Volume
     }
   deriving (Eq, Show)
 
@@ -74,6 +75,7 @@ progress docker build =
           let options = Docker.CreateContainerOptions
                 { image = step.image
                 , script = script
+                , volume = build.volume
                 }
                 
           container <- docker.createContainer options
